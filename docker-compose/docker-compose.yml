@@ -1,0 +1,9 @@
+services:
+  app:
+    build: ./hatena_widget_server
+    volumes:
+      - ../hatena_widget_server:/app
+      - ~/.hatena_widget_server:/root/.hatena_widget_server
+    ports:
+      - "20223:20223"
+    restart: always
