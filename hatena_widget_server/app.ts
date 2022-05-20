@@ -12,8 +12,10 @@ class App {
     LogUtil.info("App start");
     LogUtil.info("version", App.Version);
 
-    await SettingUtil.setup();
-    SettingUtil.load();
+    SettingUtil.setup();
+    await SettingUtil.load();
+
+    WebApiUtil.setup();
     await WebApiUtil.start();
   }
 }

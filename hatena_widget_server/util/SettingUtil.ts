@@ -1,5 +1,4 @@
-import { ensureDirSync } from "https://deno.land/std/fs/ensure_dir.ts";
-import * as Hjson from "https://deno.land/x/hjson_deno/mod.ts";
+import { parse, stringify } from "https://deno.land/std/encoding/yaml.ts";
 
 import LogUtil from "./LogUtil.ts";
 import CommonUtil from "./CommonUtil.ts";
@@ -12,63 +11,38 @@ type SettingType = {
 class SettingUtil {
   // class variables
   static DefaultSetting: SettingType = {
-    host_name: "localhost",
-    port: 20223,
+    host_name: Deno.env.get("HOST") || "localhost",
+    port: Number(Deno.env.get("PORT")) || 80,
   };
 
-  static rootPath = "";
-  static setting: SettingType;
+  static setting: SettingType = SettingUtil.DefaultSetting;
+  static settingPath = "";
 
   // class methods
-  static async setup() {
-    let home =
-      Deno.env.get("HOME") ||
-      `${Deno.env.get("HOMEDRIVE")}${Deno.env.get("HOMEPATH")}`;
+  static setup() {
+    let home = Deno.env.get("HOME") || `${Deno.env.get("HOMEDRIVE")}${Deno.env.get("HOMEPATH")}`;
     if (home) {
       home = home.replaceAll("\\", "/");
     }
 
-    SettingUtil.rootPath = `${home}/.hatena_widget_server`;
-    LogUtil.debug("rootPath", SettingUtil.rootPath);
+    const rootPath = `${home}/.hatena_widget_server`;
+    LogUtil.debug("rootPath", rootPath);
 
-    // setting.hjsonがなければ作る
-    const settingPath = `${SettingUtil.rootPath}/setting.hjson`;
-    if ((await CommonUtil.exists(settingPath)) === false) {
-      SettingUtil.create();
-    }
+    SettingUtil.settingPath = `${rootPath}/setting.hjson`;
+    LogUtil.debug("settingPath", SettingUtil.settingPath);
   }
 
-  static create() {
-    ensureDirSync(SettingUtil.rootPath);
+  static async load() {
+    if (await CommonUtil.exists(SettingUtil.settingPath)) {
+      try {
+        const settingText = Deno.readTextFileSync(SettingUtil.settingPath);
+        const setting = parse(settingText) as SettingType;
+        LogUtil.debug("setting", setting);
 
-    const settingPath = `${SettingUtil.rootPath}/setting.hjson`;
-    LogUtil.debug("settingPath", settingPath);
-
-    const newSettingText = Hjson.stringify(SettingUtil.DefaultSetting);
-
-    try {
-      Deno.writeTextFileSync(settingPath, newSettingText);
-
-      return true;
-    } catch (e) {
-      LogUtil.error(e.message);
-    }
-
-    return false;
-  }
-
-  static load() {
-    const settingPath = `${SettingUtil.rootPath}/setting.hjson`;
-    LogUtil.debug("settingPath", settingPath);
-
-    try {
-      const settingText = Deno.readTextFileSync(settingPath);
-      const setting: SettingType = Hjson.parse(settingText);
-      LogUtil.debug("setting", setting);
-
-      SettingUtil.setting = { ...SettingUtil.DefaultSetting, ...setting };
-    } catch (e) {
-      LogUtil.error(e.message);
+        SettingUtil.setting = { ...SettingUtil.DefaultSetting, ...setting };
+      } catch (e) {
+        LogUtil.error(e.message);
+      }
     }
   }
 }

@@ -6,8 +6,12 @@ import SettingUtil from "./SettingUtil.ts";
 import WebApiUtilCore from "./WebApiUtilCore.ts";
 
 class WebApiUtil {
+  // class variables
+  // deno-lint-ignore no-explicit-any
+  static app: Application<Record<string, any>>;
+
   // class methods
-  static async start() {
+  static setup() {
     const app = new Application();
 
     // logger
@@ -44,11 +48,12 @@ class WebApiUtil {
     app.use(router.routes());
     app.use(router.allowedMethods());
 
-    LogUtil.info(
-      "listen",
-      `http://${SettingUtil.setting.host_name}:${SettingUtil.setting.port}`
-    );
-    await app.listen({
+    WebApiUtil.app = app;
+  }
+
+  static async start() {
+    LogUtil.info("listen", `http://${SettingUtil.setting.host_name}:${SettingUtil.setting.port}`);
+    await WebApiUtil.app?.listen({
       hostname: SettingUtil.setting.host_name,
       port: SettingUtil.setting.port,
     });
